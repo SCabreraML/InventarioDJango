@@ -1,0 +1,46 @@
+{% extends 'inventario/base.html' %}
+
+{% block content %}
+<h2>Proveedores</h2>
+<div class="row">
+    <div class="col-md-8">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Producto Surte</th>
+                    <th>Contacto</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for prov in proveedores %}
+                <tr>
+                    <td>{{ prov.nombre }}</td>
+                    <td>{{ prov.producto_surte }}</td>
+                    <td>{{ prov.contacto }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="col-md-4">
+        <h3>Añadir Proveedor</h3>
+        <form method="POST">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label>Nombre</label>
+                <input type="text" name="nombre" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label>Producto que surte</label>
+                <input type="text" name="producto_surte" class="form-control">
+            </div>
+            <div class="mb-3">
+                <label>Contacto</label>
+                <textarea name="contacto" class="form-control"></textarea>
+            </div>
+            <button type="submit" class="btn btn-success">Añadir</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

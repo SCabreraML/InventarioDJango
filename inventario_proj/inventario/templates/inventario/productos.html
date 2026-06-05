@@ -1,77 +1,91 @@
-{% include 'inventario/inicio.html' %}
-<div class="container mt-5">
-    <h2>Productos</h2>
+{% extends 'inventario/base.html' %}
 
-    <!-- Formulario de búsqueda y ordenamiento -->
-    <form method="get" class="row g-3 mb-4">
-        <div class="col-md-4">
-            <input type="text" class="form-control" name="buscar" placeholder="Buscar por nombre o código" value="{{ request.GET.buscar }}">
-        </div>
-        <div class="col-md-3">
-            <select name="orden" class="form-select">
-                <option value="">-- Ordenar por --</option>
-                <option value="nombre" {% if request.GET.orden == 'nombre' %}selected{% endif %}>Nombre</option>
-                <option value="precio" {% if request.GET.orden == 'precio' %}selected{% endif %}>Precio</option>
-            </select>
-        </div>
-        <div class="col-md-2">
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h2>Listado de Productos</h2>
+        <form method="GET" class="mb-3 d-flex">
+            <input type="text" name="buscar" class="form-control me-2" placeholder="Buscar por nombre o código..." value="{{ request.GET.buscar }}">
             <button type="submit" class="btn btn-outline-primary">Buscar</button>
-        </div>
-    </form>
+        </form>
 
-    <!-- Tabla de productos -->
-    <table class="table table-bordered table-hover">
-        <thead>
-            <tr>
-                <th>Código</th>
-                <th>Nombre</th>
-                <th>Cantidad</th>
-                <th>Precio</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for p in productos %}
+        <table class="table table-striped">
+            <thead>
                 <tr>
-                    <td>{{ p.codigo }}</td>
-                    <td>{{ p.nombre }}</td>
-                    <td>{{ p.cantidad }}</td>
-                    <td>${{ p.precio }}</td>
+                    <th>Código</th>
+                    <th>Nombre</th>
+                    <th>Categoría</th>
+                    <th>Proveedor</th>
+                    <th>Precio</th>
+                    <th>Stock Actual</th>
+                    <th>Stock Mínimo</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for producto in productos %}
+                <tr {% if producto.stock_actual <= producto.stock_minimo %}class="table-danger"{% endif %}>
+                    <td>{{ producto.codigo }}</td>
+                    <td>{{ producto.nombre }}</td>
+                    <td>{{ producto.categoria.nombre|default:"-" }}</td>
+                    <td>{{ producto.proveedor.nombre|default:"-" }}</td>
+                    <td>${{ producto.precio }}</td>
+                    <td>{{ producto.stock_actual }}</td>
+                    <td>{{ producto.stock_minimo }}</td>
                     <td>
-                        {% if user.rol == 'ADMIN' or user.rol == 'CAJERO' %}
-                            <a href="{% url 'editar_producto' p.pk %}" class="btn btn-sm btn-warning">Editar</a>
-                        {% endif %}
-                        {% if user.rol == 'ADMIN' %}
-                            <a href="{% url 'eliminar_producto' p.pk %}" class="btn btn-sm btn-danger">Eliminar</a>
+                        <a href="{% url 'editar_producto' producto.id %}" class="btn btn-sm btn-warning">Editar</a>
+                        {% if user.es_admin %}
+                        <a href="{% url 'eliminar_producto' producto.id %}" class="btn btn-sm btn-danger">Eliminar</a>
                         {% endif %}
                     </td>
                 </tr>
-            {% empty %}
-                <tr><td colspan="5" class="text-center">No hay productos para mostrar</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 
-    <!-- Formulario para agregar producto -->
-    {% if user.rol == 'ADMIN' or user.rol == 'CAJERO' %}
-    <h4 class="mt-5">Agregar nuevo producto</h4>
-    <form method="post" class="row g-3">
-        {% csrf_token %}
-        <div class="col-md-3">
-            <input type="text" name="codigo" class="form-control" placeholder="Código" required>
-        </div>
-        <div class="col-md-3">
-            <input type="text" name="nombre" class="form-control" placeholder="Nombre" required>
-        </div>
-        <div class="col-md-2">
-            <input type="number" name="cantidad" class="form-control" placeholder="Cantidad" required min="0">
-        </div>
-        <div class="col-md-2">
-            <input type="number" step="0.01" name="precio" class="form-control" placeholder="Precio" required min="0">
-        </div>
-        <div class="col-md-2">
-            <button type="submit" class="btn btn-success">Guardar</button>
-        </div>
-    </form>
+    {% if user.es_admin %}
+    <div class="col-md-6 mt-4">
+        <h3>Registrar Nuevo Producto</h3>
+        <form method="POST">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label class="form-label">Código</label>
+                <input type="text" name="codigo" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Nombre</label>
+                <input type="text" name="nombre" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Categoría</label>
+                <select name="categoria" class="form-select">
+                    <option value="">Seleccione...</option>
+                    {% for cat in categorias %}
+                    <option value="{{ cat.id }}">{{ cat.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Proveedor</label>
+                <select name="proveedor" class="form-select">
+                    <option value="">Seleccione...</option>
+                    {% for prov in proveedores %}
+                    <option value="{{ prov.id }}">{{ prov.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Precio</label>
+                <input type="number" step="0.01" name="precio" class="form-control" value="0">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Stock Inicial</label>
+                <input type="number" name="stock_actual" class="form-control" value="0">
+            </div>
+            <button type="submit" class="btn btn-success">Guardar Producto</button>
+        </form>
+    </div>
     {% endif %}
 </div>
+{% endblock %}
