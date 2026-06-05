@@ -1,0 +1,110 @@
+# Sistema de Inventario Django
+
+## Requisitos
+
+- Python 3.10 o superior
+- pip
+- Git
+
+## 1. Clonar el repositorio
+
+```bash
+git clone https://github.com/SCabreraML/InventarioDJango.git
+git checkout refactor-inventory-system-7245591361622288707
+cd inventario_proj
+```
+
+## 2. Crear entorno virtual
+
+### Windows
+
+```bash
+python -m venv venv
+```
+
+## 3. Activar entorno virtual
+
+### PowerShell
+
+```powershell
+.\venv\Scripts\Activate.ps1
+```
+
+Si aparece un error de ejecución de scripts:
+
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+
+Luego vuelve a ejecutar:
+
+```powershell
+.\venv\Scripts\Activate.ps1
+```
+
+```bash
+pip install django
+```
+
+## 5. Verificar instalación de Django
+
+```bash
+python -m django --version
+```
+
+## 6. Aplicar migraciones
+
+```bash
+python manage.py migrate
+```
+
+## 7. Crear usuario administrador
+
+```bash
+python manage.py createsuperuser
+```
+
+Completar:
+
+- Usuario
+- Correo
+- Contraseña
+
+## 8. Ejecutar el servidor
+
+```bash
+python manage.py runserver
+```
+
+Abrir en el navegador:
+
+```
+http://127.0.0.1:8000/
+```
+
+## Panel de administración
+
+```
+http://127.0.0.1:8000/admin/
+```
+
+Ingresar con el usuario creado mediante `createsuperuser`.
+
+## Dependencias utilizadas
+
+Para generar el archivo requirements.txt:
+
+```bash
+pip freeze > requirements.txt
+```
+
+Para instalar todas las dependencias en otra máquina:
+
+```bash
+pip install -r requirements.txt
+```
+
+usuario
+
+admin
+admin
