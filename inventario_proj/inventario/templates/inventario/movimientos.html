@@ -1,0 +1,85 @@
+{% extends 'inventario/base.html' %}
+
+{% block content %}
+<h2>Movimientos de Stock</h2>
+
+{% if error %}
+<div class="alert alert-danger">{{ error }}</div>
+{% endif %}
+
+<div class="row">
+    <div class="col-md-8">
+        <h3>Historial</h3>
+        <table class="table table-sm">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Producto</th>
+                    <th>Tipo</th>
+                    <th>Cantidad</th>
+                    <th>Usuario</th>
+                    <th>Proveedor</th>
+                    <th>Obs.</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for mov in movimientos %}
+                <tr>
+                    <td>{{ mov.fecha|date:"d/m/Y H:i" }}</td>
+                    <td>{{ mov.producto.nombre }}</td>
+                    <td>
+                        <span class="badge {% if mov.tipo == 'ENTRADA' %}bg-success{% else %}bg-danger{% endif %}">
+                            {{ mov.tipo }}
+                        </span>
+                    </td>
+                    <td>{{ mov.cantidad }}</td>
+                    <td>{{ mov.usuario.username }}</td>
+                    <td>{{ mov.proveedor.nombre|default:"-" }}</td>
+                    <td>{{ mov.observacion|default:"" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="col-md-4">
+        <h3>Registrar Movimiento</h3>
+        <form method="POST">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label class="form-label">Producto</label>
+                <select name="producto" class="form-select" required>
+                    {% for prod in productos %}
+                    <option value="{{ prod.id }}">{{ prod.nombre }} (Stock: {{ prod.stock_actual }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Tipo</label>
+                <select name="tipo" class="form-select">
+                    <option value="ENTRADA">ENTRADA</option>
+                    <option value="SALIDA">SALIDA</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Cantidad</label>
+                <input type="number" name="cantidad" class="form-control" min="1" value="1" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Proveedor (opcional para entradas)</label>
+                <select name="proveedor" class="form-select">
+                    <option value="">Seleccione...</option>
+                    {% for prov in proveedores %}
+                    <option value="{{ prov.id }}">{{ prov.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Observación</label>
+                <textarea name="observacion" class="form-control" rows="2"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Registrar</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

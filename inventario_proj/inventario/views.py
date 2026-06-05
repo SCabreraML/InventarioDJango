@@ -1,8 +1,9 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
-from .models import Producto, Transaccion, Usuario
+from .models import Producto, Movimiento, Usuario, Categoria, Proveedor
+from django.db import IntegrityError
 
 def inicio(request):
     return render(request, 'inventario/inicio.html')
@@ -20,232 +21,169 @@ def login_view(request):
             error = "Usuario o contraseña incorrectos."
     return render(request, 'inventario/login.html', {'error': error})
 
+def logout_view(request):
+    logout(request)
+    return redirect('login')
+
 @login_required
 def producto_list(request):
     productos = Producto.objects.all()
 
     buscar = request.GET.get('buscar')
-    orden = request.GET.get('orden')
-
     if buscar:
         productos = productos.filter(Q(nombre__icontains=buscar) | Q(codigo__icontains=buscar))
 
-    if orden in ['nombre', 'precio']:
-        productos = productos.order_by(orden)
-
     if request.method == 'POST':
-        if request.user.rol not in ['ADMIN', 'CAJERO']:
+        if not request.user.es_admin:
             return redirect('producto_list')
 
         codigo = request.POST.get('codigo')
         nombre = request.POST.get('nombre')
-        cantidad = request.POST.get('cantidad')
+        stock_actual = request.POST.get('stock_actual')
         precio = request.POST.get('precio')
+        categoria_id = request.POST.get('categoria')
+        proveedor_id = request.POST.get('proveedor')
 
-        if codigo and nombre and cantidad and precio:
-            Producto.objects.create(
-                codigo=codigo,
-                nombre=nombre,
-                cantidad=cantidad,
-                precio=precio
-            )
-            return redirect('producto_list')
+        if codigo and nombre:
+            try:
+                producto = Producto.objects.create(
+                    codigo=codigo,
+                    nombre=nombre,
+                    stock_actual=stock_actual or 0,
+                    precio=precio or 0,
+                )
+                if categoria_id:
+                    producto.categoria = Categoria.objects.get(id=categoria_id)
+                if proveedor_id:
+                    producto.proveedor = Proveedor.objects.get(id=proveedor_id)
+                producto.save()
+                return redirect('producto_list')
+            except IntegrityError:
+                pass
 
+    categorias = Categoria.objects.all()
+    proveedores = Proveedor.objects.all()
     contexto = {
         'productos': productos,
-        'user': request.user,
+        'categorias': categorias,
+        'proveedores': proveedores,
     }
     return render(request, 'inventario/productos.html', contexto)
-
 
 @login_required
 def editar_producto(request, pk):
     producto = get_object_or_404(Producto, id=pk)
-
     if request.method == 'POST':
-        # actualizar campos con request.POST
         producto.codigo = request.POST.get('codigo')
         producto.nombre = request.POST.get('nombre')
-        producto.cantidad = request.POST.get('cantidad')
+        producto.stock_actual = request.POST.get('stock_actual')
         producto.precio = request.POST.get('precio')
+        categoria_id = request.POST.get('categoria')
+        proveedor_id = request.POST.get('proveedor')
+
+        if categoria_id:
+            producto.categoria = Categoria.objects.get(id=categoria_id)
+        else:
+            producto.categoria = None
+
+        if proveedor_id:
+            producto.proveedor = Proveedor.objects.get(id=proveedor_id)
+        else:
+            producto.proveedor = None
+
         producto.save()
         return redirect('producto_list')
 
-    context = {'producto': producto}
+    categorias = Categoria.objects.all()
+    proveedores = Proveedor.objects.all()
+    context = {'producto': producto, 'categorias': categorias, 'proveedores': proveedores}
     return render(request, 'inventario/editar_producto.html', context)
-
 
 @login_required
 def eliminar_producto(request, pk):
-    if request.user.rol != 'ADMIN':
+    if not request.user.es_admin:
         return redirect('producto_list')
-
     producto = get_object_or_404(Producto, pk=pk)
-
     if request.method == 'POST':
         producto.delete()
         return redirect('producto_list')
-
-    contexto = {
-        'producto': producto,
-        'tipo': 'producto',
-    }
-    return render(request, 'inventario/confirmar_eliminar.html', contexto)
+    return render(request, 'inventario/confirmar_eliminar.html', {'producto': producto, 'tipo': 'producto'})
 
 @login_required
-def transaccion_list(request):
-    transacciones = Transaccion.objects.select_related('producto', 'usuario').all()
+def movimiento_list(request):
+    movimientos = Movimiento.objects.all().order_by('-fecha')
     productos = Producto.objects.all()
-
-    buscar = request.GET.get('buscar')
-    orden = request.GET.get('orden')
-
-    if buscar:
-        transacciones = transacciones.filter(
-            Q(producto__nombre__icontains=buscar) | 
-            Q(usuario__username__icontains=buscar) |
-            Q(tipo__icontains=buscar)
-        )
-
-    if orden in ['fecha', 'tipo']:
-        transacciones = transacciones.order_by(orden)
+    proveedores = Proveedor.objects.all()
 
     if request.method == 'POST':
-        if not request.user.puede_crear_transacciones:
-            return redirect('transaccion_list')
-
         producto_id = request.POST.get('producto')
         tipo = request.POST.get('tipo')
         cantidad = int(request.POST.get('cantidad'))
+        proveedor_id = request.POST.get('proveedor')
+        observacion = request.POST.get('observacion')
 
         producto = get_object_or_404(Producto, pk=producto_id)
+        proveedor = None
+        if proveedor_id:
+            proveedor = Proveedor.objects.get(id=proveedor_id)
+
         try:
-            transaccion = Transaccion(producto=producto, usuario=request.user, tipo=tipo, cantidad=cantidad)
-            transaccion.save()
-            return redirect('transaccion_list')
+            movimiento = Movimiento(
+                producto=producto,
+                usuario=request.user,
+                tipo=tipo,
+                cantidad=cantidad,
+                proveedor=proveedor,
+                observacion=observacion
+            )
+            movimiento.save()
+            return redirect('movimiento_list')
         except ValueError as e:
             error = str(e)
-            context = {'transacciones': transacciones, 'productos': productos, 'error': error}
-            return render(request, 'inventario/transacciones.html', context)
+            return render(request, 'inventario/movimientos.html', {
+                'movimientos': movimientos,
+                'productos': productos,
+                'proveedores': proveedores,
+                'error': error
+            })
 
-    context = {'transacciones': transacciones, 'productos': productos}
-    return render(request, 'inventario/transacciones.html', context)
-
-@login_required
-def editar_transaccion(request, pk):
-    transaccion = get_object_or_404(Transaccion, pk=pk)
-    productos = Producto.objects.all()
-
-    if not request.user.puede_editar_transacciones:
-        return redirect('transaccion_list')
-
-    if request.method == 'POST':
-        producto_id = request.POST.get('producto')
-        tipo = request.POST.get('tipo')
-        cantidad = int(request.POST.get('cantidad'))
-
-        producto = get_object_or_404(Producto, pk=producto_id)
-
-        # Para editar: revertir efecto antiguo y aplicar el nuevo
-        # Muy importante para mantener inventario correcto:
-        # Revertir inventario anterior
-        if transaccion.tipo == 'VENTA':
-            transaccion.producto.cantidad += transaccion.cantidad
-        else:
-            transaccion.producto.cantidad -= transaccion.cantidad
-        transaccion.producto.save()
-
-        # Aplicar nuevos cambios validando stock
-        if tipo == 'VENTA' and producto.cantidad < cantidad:
-            error = "No hay suficiente inventario para esta venta."
-            context = {'transaccion': transaccion, 'productos': productos, 'error': error}
-            return render(request, 'inventario/editar_transaccion.html', context)
-
-        transaccion.producto = producto
-        transaccion.tipo = tipo
-        transaccion.cantidad = cantidad
-        transaccion.usuario = request.user
-        transaccion.save()
-        return redirect('transaccion_list')
-
-    context = {'transaccion': transaccion, 'productos': productos}
-    return render(request, 'inventario/editar_transaccion.html', context)
-
-@login_required
-def eliminar_transaccion(request, pk):
-    transaccion = get_object_or_404(Transaccion, pk=pk)
-    if not request.user.puede_eliminar_transacciones:
-        return redirect('transaccion_list')
-
-    if request.method == 'POST':
-        # Revertir inventario
-        if transaccion.tipo == 'VENTA':
-            transaccion.producto.cantidad += transaccion.cantidad
-        else:
-            transaccion.producto.cantidad -= transaccion.cantidad
-        transaccion.producto.save()
-        transaccion.delete()
-        return redirect('transaccion_list')
-
-    return render(request, 'inventario/confirmar_eliminar.html', {'tipo': 'transacción', 'objeto': transaccion})
+    context = {'movimientos': movimientos, 'productos': productos, 'proveedores': proveedores}
+    return render(request, 'inventario/movimientos.html', context)
 
 @login_required
 def usuario_list(request):
+    if not request.user.es_admin:
+        return redirect('inicio')
     usuarios = Usuario.objects.all()
-
-    buscar = request.GET.get('buscar')
-    orden = request.GET.get('orden')
-
-    if buscar:
-        usuarios = usuarios.filter(Q(username__icontains=buscar) | Q(email__icontains=buscar))
-
-    if orden in ['username', 'rol']:
-        usuarios = usuarios.order_by(orden)
-
-    if request.method == 'POST' and request.user.es_admin:
+    if request.method == 'POST':
         username = request.POST.get('username')
-        email = request.POST.get('email')
         rol = request.POST.get('rol')
-
-        if username and email and rol:
-            Usuario.objects.create_user(username=username, email=email, rol=rol, password='1234')
+        if username and rol:
+            Usuario.objects.create_user(username=username, rol=rol, password='123')
             return redirect('usuario_list')
-
-    context = {
-        'usuarios': usuarios,
-        'user': request.user,  # <-- Agregar esta línea para facilitar acceso en template
-    }
-    return render(request, 'inventario/usuarios.html', context)
-
+    return render(request, 'inventario/usuarios.html', {'usuarios': usuarios})
 
 @login_required
-def editar_usuario(request, pk):
-    usuario_editar = get_object_or_404(Usuario, pk=pk)
-    if not usuario_editar.puede_editar(request.user):
-        return redirect('usuario_list')
-
+def categoria_list(request):
+    categorias = Categoria.objects.all()
     if request.method == 'POST':
-        usuario_editar.username = request.POST.get('username')
-        usuario_editar.email = request.POST.get('email')
-        usuario_editar.rol = request.POST.get('rol')
-        usuario_editar.save()
-        return redirect('usuario_list')
-
-    context = {'usuario_editar': usuario_editar}
-    return render(request, 'inventario/editar_usuario.html', context)
+        nombre = request.POST.get('nombre')
+        if nombre:
+            try:
+                Categoria.objects.create(nombre=nombre)
+                return redirect('categoria_list')
+            except IntegrityError:
+                pass
+    return render(request, 'inventario/categorias.html', {'categorias': categorias})
 
 @login_required
-def eliminar_usuario(request, pk):
-    usuario = get_object_or_404(Usuario, pk=pk)
-    if not usuario.puede_eliminar(request.user):
-        return redirect('usuario_list')
-
+def proveedor_list(request):
+    proveedores = Proveedor.objects.all()
     if request.method == 'POST':
-        usuario.delete()
-        # Reseteo de PK (solo si usas SQLite, no recomendado para producción)
-        from django.db import connection
-        cursor = connection.cursor()
-        cursor.execute("DELETE FROM sqlite_sequence WHERE name='inventario_usuario';")
-        return redirect('usuario_list')
-
-    return render(request, 'inventario/confirmar_eliminar.html', {'tipo': 'usuario', 'objeto': usuario})
+        nombre = request.POST.get('nombre')
+        producto_surte = request.POST.get('producto_surte')
+        contacto = request.POST.get('contacto')
+        if nombre:
+            Proveedor.objects.create(nombre=nombre, producto_surte=producto_surte, contacto=contacto)
+            return redirect('proveedor_list')
+    return render(request, 'inventario/proveedores.html', {'proveedores': proveedores})

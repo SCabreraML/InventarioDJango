@@ -1,66 +1,24 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Login - Sistema de Inventario</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body>
+{% extends 'inventario/base.html' %}
 
-    <!-- Barra de navegación -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="/">Inventario</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="/">Inicio</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/productos/">Productos</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/usuarios/">Usuarios</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/transacciones/">Transacciones</a>
-                    </li>
-                </ul>
-                <a href="/admin/" class="btn btn-light">Admin</a>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Contenido login -->
-    <div class="container mt-5" style="max-width: 400px;">
-        <h2 class="text-center text-primary mb-4">Iniciar sesión</h2>
-
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-4">
+        <h2 class="text-center">Iniciar Sesión</h2>
         {% if error %}
-            <div class="alert alert-danger" role="alert">
-                {{ error }}
-            </div>
+        <div class="alert alert-danger">{{ error }}</div>
         {% endif %}
-
-        <form method="post" novalidate>
+        <form method="POST" class="card p-4">
             {% csrf_token %}
             <div class="mb-3">
-                <label for="username" class="form-label">Usuario</label>
-                <input type="text" class="form-control" id="username" name="username" required autofocus>
+                <label class="form-label">Usuario</label>
+                <input type="text" name="username" class="form-control" required>
             </div>
-
             <div class="mb-3">
-                <label for="password" class="form-label">Contraseña</label>
-                <input type="password" class="form-control" id="password" name="password" required>
+                <label class="form-label">Contraseña</label>
+                <input type="password" name="password" class="form-control" required>
             </div>
-
-            <button type="submit" class="btn btn-primary w-100">Ingresar</button>
+            <button type="submit" name="login_btn" class="btn btn-primary w-100">Entrar</button>
         </form>
     </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+</div>
+{% endblock %}
