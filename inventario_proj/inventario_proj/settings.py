@@ -73,14 +73,29 @@ WSGI_APPLICATION = 'inventario_proj.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'mssql',
+        'NAME': 'Tienda',
+        'USER': 'sa',
+        'PASSWORD': '123456',
+        'HOST': '13.58.161.97',
+        'PORT': '1433',
+        'OPTIONS': {
+            'driver': 'ODBC Driver 18 for SQL Server',
+            'TrustServerCertificate': 'yes',
+        },
     }
 }
 
-AUTH_USER_MODEL = 'inventario.Usuario'
+# AUTH_USER_MODEL = 'inventario.Usuario'
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 

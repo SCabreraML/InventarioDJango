@@ -1,0 +1,192 @@
+# Sistema de Inventario Django
+
+## Requisitos
+
+* Python 3.10 o superior
+* Git
+* Microsoft SQL Server
+* ODBC Driver 18 for SQL Server
+* pip
+
+---
+
+## 1. Clonar el repositorio
+
+```bash
+git clone https://github.com/SCabreraML/InventarioDJango.git
+cd InventarioDJango
+git checkout refactor-inventory-system-7245591361622288707
+cd inventario_proj
+```
+
+---
+
+## 2. Crear entorno virtual
+
+### Windows
+
+```bash
+python -m venv venv
+```
+
+---
+
+## 3. Activar entorno virtual
+
+### PowerShell
+
+```powershell
+.\venv\Scripts\Activate.ps1
+```
+
+Si aparece un error de ejecución de scripts:
+
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+
+Luego volver a ejecutar:
+
+```powershell
+.\venv\Scripts\Activate.ps1
+```
+
+### CMD
+
+```cmd
+venv\Scripts\activate.bat
+```
+
+---
+
+## 4. Instalar dependencias
+
+```bash
+pip install django
+pip install mssql-django
+pip install pyodbc
+```
+
+o utilizando el archivo requirements.txt:
+
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+## 5. Instalar ODBC Driver para SQL Server
+
+Descargar e instalar:
+
+ODBC Driver 18 for SQL Server
+
+Verificar instalación:
+
+```python
+import pyodbc
+print(pyodbc.drivers())
+```
+
+Debe aparecer algo similar a:
+
+```text
+['ODBC Driver 18 for SQL Server']
+```
+
+---
+
+## 6. Configuración de Base de Datos
+
+El proyecto utiliza una base de datos SQL Server llamada:
+
+```text
+Tienda
+```
+
+Configuración utilizada:
+
+```python
+DATABASES = {
+    'default': {
+        'ENGINE': 'mssql',
+        'NAME': 'Tienda',
+        'USER': 'sa',
+        'PASSWORD': '********',
+        'HOST': '13.58.161.97',
+        'PORT': '1433',
+        'OPTIONS': {
+            'driver': 'ODBC Driver 18 for SQL Server',
+            'TrustServerCertificate': 'yes',
+        },
+    }
+}
+```
+
+---
+
+## 7. Aplicar migraciones
+
+```bash
+python manage.py migrate
+```
+
+---
+
+## 8. Crear usuario administrador
+
+```bash
+python manage.py createsuperuser
+```
+
+Credenciales sugeridas:
+
+Usuario:
+
+```text
+admin
+```
+
+Contraseña:
+
+```text
+admin
+```
+
+---
+
+## 9. Ejecutar el servidor
+
+```bash
+python manage.py runserver
+```
+
+Abrir:
+
+```text
+http://127.0.0.1:8000/
+```
+
+---
+
+## Panel de Administración
+
+```text
+http://127.0.0.1:8000/admin/
+```
+
+---
+
+## Generar requirements.txt
+
+```bash
+pip freeze > requirements.txt
+```
+
+---
+
+## Instalar dependencias desde requirements.txt
+
+```bash
+pip install -r requirements.txt
+```
