@@ -1,27 +1,26 @@
 from django.urls import path
-from inventario import views
 from django.contrib.auth import views as auth_views
-
+from . import views
 
 urlpatterns = [
     path('', views.inicio, name='inicio'),
 
-    # Productos
-    path('productos/', views.producto_list, name='producto_list'),
-    path('productos/editar/<int:pk>/', views.editar_producto, name='editar_producto'),
-    path('productos/eliminar/<int:pk>/', views.eliminar_producto, name='eliminar_producto'),
-
-    # Transacciones
-    path('transacciones/', views.transaccion_list, name='transaccion_list'),
-    path('transacciones/editar/<int:pk>/', views.editar_transaccion, name='editar_transaccion'),
-    path('transacciones/eliminar/<int:pk>/', views.eliminar_transaccion, name='eliminar_transaccion'),
-
-    # Usuarios
-    path('usuarios/', views.usuario_list, name='usuario_list'),
-    path('usuarios/editar/<int:pk>/', views.editar_usuario, name='editar_usuario'),
-    path('usuarios/eliminar/<int:pk>/', views.eliminar_usuario, name='eliminar_usuario'),
-
     # Auth
-    path('login/', views.login_view, name='login'),
-    path('logout/', auth_views.LogoutView.as_view(next_page='login'), name='logout'),
+    path('login/', auth_views.LoginView.as_view(template_name='registration/login.html'), name='login'),
+    path('logout/', auth_views.LogoutView.as_view(), name='logout'),
+
+    # Carreras
+    path('carreras/', views.CarreraListView.as_view(), name='carrera_list'),
+    path('carreras/nuevo/', views.CarreraCreateView.as_view(), name='carrera_create'),
+    path('carreras/editar/<int:pk>/', views.CarreraUpdateView.as_view(), name='carrera_update'),
+
+    # Centros de Costo
+    path('centros-costo/', views.CentroCostoListView.as_view(), name='centro_costo_list'),
+    path('centros-costo/nuevo/', views.CentroCostoCreateView.as_view(), name='centro_costo_create'),
+    path('centros-costo/editar/<int:pk>/', views.CentroCostoUpdateView.as_view(), name='centro_costo_update'),
+
+    # Bodegas
+    path('bodegas/', views.BodegaListView.as_view(), name='bodega_list'),
+    path('bodegas/nuevo/', views.BodegaCreateView.as_view(), name='bodega_create'),
+    path('bodegas/editar/<int:pk>/', views.BodegaUpdateView.as_view(), name='bodega_update'),
 ]
