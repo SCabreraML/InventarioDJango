@@ -1,3 +1,4 @@
+from django.db import models
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -5,8 +6,8 @@ from django.urls import reverse_lazy
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
-from .models import Carrera, CentroCosto, Bodega, ActivoFijo, CategoriaActivo, Mantenimiento, MovimientoActivo
-from .forms import CarreraForm, CentroCostoForm, BodegaForm, ActivoFijoForm, CategoriaActivoForm, MantenimientoForm
+from .models import Carrera, CentroCosto, Bodega, ActivoFijo, CategoriaActivo, Mantenimiento, MovimientoActivo, Insumo, CategoriaInsumo, StockInsumo
+from .forms import CarreraForm, CentroCostoForm, BodegaForm, ActivoFijoForm, CategoriaActivoForm, MantenimientoForm, InsumoForm, CategoriaInsumoForm, MovimientoInsumoForm
 
 @login_required
 def inicio(request):
@@ -174,6 +175,83 @@ class MovimientoActivoListView(LoginRequiredMixin, ListView):
     template_name = 'inventario/movimiento_activo_list.html'
     context_object_name = 'movimientos'
 
+# Insumo Views
+class InsumoListView(LoginRequiredMixin, ListView):
+    model = Insumo
+    template_name = 'inventario/insumo_list.html'
+    context_object_name = 'insumos'
+
+class InsumoCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
+    model = Insumo
+    form_class = InsumoForm
+    template_name = 'inventario/form.html'
+    success_url = reverse_lazy('insumo_list')
+    success_message = "Insumo registrado exitosamente."
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = "Registrar Insumo"
+        return context
+
+class CategoriaInsumoListView(LoginRequiredMixin, ListView):
+    model = CategoriaInsumo
+    template_name = 'inventario/categoria_insumo_list.html'
+    context_object_name = 'categorias'
+
+class CategoriaInsumoCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
+    model = CategoriaInsumo
+    form_class = CategoriaInsumoForm
+    template_name = 'inventario/form.html'
+    success_url = reverse_lazy('categoria_insumo_list')
+    success_message = "Categoría de Insumo creada exitosamente."
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = "Crear Categoría de Insumo"
+        return context
+
+# Stock Management
+class StockInsumoListView(LoginRequiredMixin, ListView):
+    model = StockInsumo
+    template_name = 'inventario/stock_list.html'
+    context_object_name = 'stocks'
+
+@login_required
+def registrar_movimiento_insumo(request):
+    if request.method == 'POST':
+        form = MovimientoInsumoForm(request.POST)
+        if form.is_valid():
+            insumo = form.cleaned_data['insumo']
+            bodega = form.cleaned_data['bodega']
+            tipo = form.cleaned_data['tipo']
+            cantidad = form.cleaned_data['cantidad']
+            lote = form.cleaned_data['lote']
+            fecha_caducidad = form.cleaned_data['fecha_caducidad']
+
+            stock, created = StockInsumo.objects.get_or_create(
+                insumo=insumo,
+                bodega=bodega,
+                defaults={'lote': lote, 'fecha_caducidad': fecha_caducidad}
+            )
+
+            if tipo == 'ENTRADA':
+                stock.cantidad_actual += cantidad
+                if lote: stock.lote = lote
+                if fecha_caducidad: stock.fecha_caducidad = fecha_caducidad
+            else: # SALIDA
+                if stock.cantidad_actual < cantidad:
+                    messages.error(request, f"Stock insuficiente en {bodega.nombre}. Disponible: {stock.cantidad_actual}")
+                    return render(request, 'inventario/movimiento_insumo.html', {'form': form})
+                stock.cantidad_actual -= cantidad
+
+            stock.save()
+            messages.success(request, f"Movimiento de {tipo} registrado exitosamente.")
+            return redirect('stock_list')
+    else:
+        form = MovimientoInsumoForm()
+
+    return render(request, 'inventario/movimiento_insumo.html', {'form': form})
+
 # Reportes y Alertas
 @login_required
 def reportes_activos(request):
@@ -200,14 +278,27 @@ def dashboard_alertas(request):
     from django.utils import timezone
     from datetime import timedelta
 
+    today = timezone.now().date()
+    next_week = today + timedelta(days=7)
+    next_month = today + timedelta(days=30)
+
     # Alertas de mantenimiento (próximos 7 días)
     proximos_mantenimientos = Mantenimiento.objects.filter(
-        fecha_programada__lte=timezone.now() + timedelta(days=7),
+        fecha_programada__lte=next_week,
         estado='Programado'
     )
 
-    # Alertas de stock bajo (se implementará en Sprint 4, pero dejamos la estructura)
+    # Alertas de stock bajo
+    stock_bajo = StockInsumo.objects.filter(cantidad_actual__lte=models.F('cantidad_minima'))
+
+    # Alertas de caducidad (próximos 30 días)
+    caducidades = StockInsumo.objects.filter(
+        fecha_caducidad__lte=next_month,
+        fecha_caducidad__gte=today
+    )
 
     return render(request, 'inventario/dashboard_alertas.html', {
-        'mantenimientos': proximos_mantenimientos
+        'mantenimientos': proximos_mantenimientos,
+        'stock_bajo': stock_bajo,
+        'caducidades': caducidades
     })

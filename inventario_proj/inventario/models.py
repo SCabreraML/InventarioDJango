@@ -1,5 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, Group, Permission
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 
@@ -12,6 +12,16 @@ class Usuario(AbstractUser):
     )
     rol = models.CharField(max_length=20, choices=ROLES, default='LABORATORIO')
     telefono = models.CharField(max_length=20, blank=True, null=True)
+
+    def save(self, *args, **kwargs):
+        is_new = self.pk is None
+        super().save(*args, **kwargs)
+        # Sincronizar con Grupos de Django
+        group_name = dict(self.ROLES).get(self.rol)
+        if group_name:
+            group, created = Group.objects.get_or_create(name=group_name)
+            self.groups.clear()
+            self.groups.add(group)
 
     def __str__(self):
         return f"{self.first_name} {self.last_name} ({self.username})"
@@ -77,6 +87,12 @@ class CategoriaActivo(models.Model):
         return self.nombre
 
 class ActivoFijo(models.Model):
+    ESTADOS = (
+        ('Operativo', 'Operativo'),
+        ('En Mantenimiento', 'En Mantenimiento'),
+        ('Fuera de Servicio', 'Fuera de Servicio'),
+        ('Dado de Baja', 'Dado de Baja'),
+    )
     carrera = models.ForeignKey(Carrera, on_delete=models.CASCADE)
     centro_costo = models.ForeignKey(CentroCosto, on_delete=models.SET_NULL, null=True, blank=True)
     categoria_activo = models.ForeignKey(CategoriaActivo, on_delete=models.CASCADE)
@@ -85,7 +101,7 @@ class ActivoFijo(models.Model):
     descripcion = models.TextField(blank=True, null=True)
     valor_adquisicion = models.DecimalField(max_digits=14, decimal_places=2, blank=True, null=True)
     fecha_adquisicion = models.DateField(blank=True, null=True)
-    estado = models.CharField(max_length=50, default='Operativo')
+    estado = models.CharField(max_length=50, choices=ESTADOS, default='Operativo')
     ubicacion_actual = models.CharField(max_length=150, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     activo = models.BooleanField(default=True)
@@ -155,11 +171,18 @@ class Persona(models.Model):
         return f"{self.nombres} {self.apellidos}"
 
 class Solicitud(models.Model):
+    ESTADOS = (
+        ('Pendiente', 'Pendiente'),
+        ('Aprobada', 'Aprobada'),
+        ('Rechazada', 'Rechazada'),
+        ('En Proceso', 'En Proceso'),
+        ('Completada', 'Completada'),
+    )
     carrera = models.ForeignKey(Carrera, on_delete=models.CASCADE)
     centro_costo = models.ForeignKey(CentroCosto, on_delete=models.SET_NULL, null=True, blank=True)
     persona = models.ForeignKey(Persona, on_delete=models.CASCADE)
     fecha_solicitud = models.DateTimeField(auto_now_add=True)
-    estado = models.CharField(max_length=30, default='Pendiente')
+    estado = models.CharField(max_length=30, choices=ESTADOS, default='Pendiente')
     observacion = models.CharField(max_length=500, blank=True, null=True)
 
     class Meta:
@@ -188,13 +211,19 @@ class Compra(models.Model):
         db_table = 'compras'
 
 class Mantenimiento(models.Model):
+    ESTADOS = (
+        ('Programado', 'Programado'),
+        ('En Proceso', 'En Proceso'),
+        ('Realizado', 'Realizado'),
+        ('Cancelado', 'Cancelado'),
+    )
     activo_fijo = models.ForeignKey(ActivoFijo, on_delete=models.CASCADE)
     persona = models.ForeignKey(Persona, on_delete=models.CASCADE)
     tipo = models.CharField(max_length=50)
     fecha_programada = models.DateField()
     fecha_realizada = models.DateField(blank=True, null=True)
     descripcion = models.CharField(max_length=500, blank=True, null=True)
-    estado = models.CharField(max_length=30, default='Programado')
+    estado = models.CharField(max_length=30, choices=ESTADOS, default='Programado')
 
     class Meta:
         db_table = 'mantenimientos'
@@ -220,12 +249,15 @@ class MovimientoActivo(models.Model):
 @receiver(pre_save, sender=ActivoFijo)
 def track_asset_movement(sender, instance, **kwargs):
     if instance.pk:
-        old_instance = ActivoFijo.objects.get(pk=instance.pk)
-        if old_instance.ubicacion_actual != instance.ubicacion_actual:
-            MovimientoActivo.objects.create(
-                activo_fijo=instance,
-                tipo='TRASLADO',
-                ubicacion_anterior=old_instance.ubicacion_actual,
-                ubicacion_nueva=instance.ubicacion_actual,
-                observacion='Cambio automático de ubicación'
-            )
+        try:
+            old_instance = ActivoFijo.objects.get(pk=instance.pk)
+            if old_instance.ubicacion_actual != instance.ubicacion_actual:
+                MovimientoActivo.objects.create(
+                    activo_fijo=instance,
+                    tipo='TRASLADO',
+                    ubicacion_anterior=old_instance.ubicacion_actual,
+                    ubicacion_nueva=instance.ubicacion_actual,
+                    observacion='Cambio automático de ubicación'
+                )
+        except ActivoFijo.DoesNotExist:
+            pass

@@ -84,8 +84,11 @@
                             <a class="nav-link {% if 'reportes/activos' in request.path %}active{% endif %}" href="{% url 'reporte_activos' %}">
                                 <i class="fas fa-chart-bar me-2"></i> Reporte Activos
                             </a>
-                            <a class="nav-link" href="#">
+                            <a class="nav-link {% if 'insumos' in request.path %}active{% endif %}" href="{% url 'insumo_list' %}">
                                 <i class="fas fa-box me-2"></i> Insumos
+                            </a>
+                            <a class="nav-link {% if 'stock' in request.path %}active{% endif %}" href="{% url 'stock_list' %}">
+                                <i class="fas fa-boxes me-2"></i> Stock Bodegas
                             </a>
                         </li>
                     </ul>

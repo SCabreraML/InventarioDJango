@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block title %}Stock Bodegas{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3>Stock General por Bodega</h3>
+    <a href="{% url 'movimiento_insumo' %}" class="btn btn-primary">
+        <i class="fas fa-exchange-alt me-1"></i> Registrar Movimiento
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Bodega</th>
+                        <th>Insumo</th>
+                        <th>Cantidad Actual</th>
+                        <th>Mínimo</th>
+                        <th>Lote</th>
+                        <th>Caducidad</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stock in stocks %}
+                    <tr class="{% if stock.cantidad_actual <= stock.cantidad_minima %}table-danger{% endif %}">
+                        <td>{{ stock.bodega.nombre }}</td>
+                        <td>{{ stock.insumo.nombre }}</td>
+                        <td>{{ stock.cantidad_actual }} {{ stock.insumo.unidad_medida }}</td>
+                        <td>{{ stock.cantidad_minima }}</td>
+                        <td>{{ stock.lote|default:"-" }}</td>
+                        <td>
+                            {% if stock.fecha_caducidad %}
+                                {{ stock.fecha_caducidad|date:"d/m/Y" }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-4 text-muted">No hay stock registrado en las bodegas.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

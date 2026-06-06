@@ -40,6 +40,16 @@ urlpatterns = [
     # Historial
     path('activos/historial/', views.MovimientoActivoListView.as_view(), name='movimiento_activo_list'),
 
+    # Insumos
+    path('insumos/', views.InsumoListView.as_view(), name='insumo_list'),
+    path('insumos/nuevo/', views.InsumoCreateView.as_view(), name='insumo_create'),
+    path('insumos/categorias/', views.CategoriaInsumoListView.as_view(), name='categoria_insumo_list'),
+    path('insumos/categorias/nuevo/', views.CategoriaInsumoCreateView.as_view(), name='categoria_insumo_create'),
+
+    # Stock
+    path('stock/', views.StockInsumoListView.as_view(), name='stock_list'),
+    path('stock/movimiento/', views.registrar_movimiento_insumo, name='movimiento_insumo'),
+
     # Reportes y Alertas
     path('reportes/activos/', views.reportes_activos, name='reporte_activos'),
     path('dashboard/alertas/', views.dashboard_alertas, name='dashboard_alertas'),
