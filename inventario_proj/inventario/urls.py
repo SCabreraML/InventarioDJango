@@ -23,4 +23,24 @@ urlpatterns = [
     path('bodegas/', views.BodegaListView.as_view(), name='bodega_list'),
     path('bodegas/nuevo/', views.BodegaCreateView.as_view(), name='bodega_create'),
     path('bodegas/editar/<int:pk>/', views.BodegaUpdateView.as_view(), name='bodega_update'),
+
+    # Activos Fijos
+    path('activos/', views.ActivoFijoListView.as_view(), name='activo_list'),
+    path('activos/nuevo/', views.ActivoFijoCreateView.as_view(), name='activo_create'),
+    path('activos/editar/<int:pk>/', views.ActivoFijoUpdateView.as_view(), name='activo_update'),
+
+    # Categorias Activos
+    path('activos/categorias/', views.CategoriaActivoListView.as_view(), name='categoria_activo_list'),
+    path('activos/categorias/nuevo/', views.CategoriaActivoCreateView.as_view(), name='categoria_activo_create'),
+
+    # Mantenimientos
+    path('mantenimientos/', views.MantenimientoListView.as_view(), name='mantenimiento_list'),
+    path('mantenimientos/nuevo/', views.MantenimientoCreateView.as_view(), name='mantenimiento_create'),
+
+    # Historial
+    path('activos/historial/', views.MovimientoActivoListView.as_view(), name='movimiento_activo_list'),
+
+    # Reportes y Alertas
+    path('reportes/activos/', views.reportes_activos, name='reporte_activos'),
+    path('dashboard/alertas/', views.dashboard_alertas, name='dashboard_alertas'),
 ]

@@ -56,6 +56,11 @@
                                 <i class="fas fa-home me-2"></i> Inicio
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'dashboard' in request.path %}active{% endif %}" href="{% url 'dashboard_alertas' %}">
+                                <i class="fas fa-bell me-2"></i> Alertas
+                            </a>
+                        </li>
                         <li class="nav-item mt-3">
                             <h6 class="px-3 text-uppercase text-muted">Configuración</h6>
                             <a class="nav-link {% if 'carrera' in request.path %}active{% endif %}" href="{% url 'carrera_list' %}">
@@ -70,8 +75,14 @@
                         </li>
                         <li class="nav-item mt-3">
                             <h6 class="px-3 text-uppercase text-muted">Inventarios</h6>
-                            <a class="nav-link" href="#">
+                            <a class="nav-link {% if 'activos' in request.path and 'insumos' not in request.path %}active{% endif %}" href="{% url 'activo_list' %}">
                                 <i class="fas fa-tools me-2"></i> Activos Fijos
+                            </a>
+                            <a class="nav-link {% if 'mantenimientos' in request.path %}active{% endif %}" href="{% url 'mantenimiento_list' %}">
+                                <i class="fas fa-wrench me-2"></i> Mantenimientos
+                            </a>
+                            <a class="nav-link {% if 'reportes/activos' in request.path %}active{% endif %}" href="{% url 'reporte_activos' %}">
+                                <i class="fas fa-chart-bar me-2"></i> Reporte Activos
                             </a>
                             <a class="nav-link" href="#">
                                 <i class="fas fa-box me-2"></i> Insumos

@@ -13,12 +13,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure--24=h*l8=^y8h&0-(r9=yv1-3%@^6lnzbx4(%&@3e3(o$3v7rk'
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure--24=h*l8=^y8h&0-(r9=yv1-3%@^6lnzbx4(%&@3e3(o$3v7rk')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '').split(',')
 
 
 # Application definition
@@ -69,16 +69,15 @@ WSGI_APPLICATION = 'inventario_proj.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'FASABI_Inventarios',
-        'USER': 'postgres',
-        'PASSWORD': 'password',  # Change this to your password
-        'HOST': 'localhost',
-        'PORT': '5432',
+        'NAME': os.environ.get('DB_NAME', 'FASABI_Inventarios'),
+        'USER': os.environ.get('DB_USER', 'postgres'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', 'password'),
+        'HOST': os.environ.get('DB_HOST', 'localhost'),
+        'PORT': os.environ.get('DB_PORT', '5432'),
     }
 }
 
-# Fallback to SQLite if PostgreSQL is not available (for local dev if needed,
-# but per request we should use PostgreSQL)
+# Fallback to SQLite if PostgreSQL is not available
 if os.environ.get('USE_SQLITE'):
     DATABASES = {
         'default': {

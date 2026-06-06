@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.db.models.signals import post_save, pre_save
+from django.dispatch import receiver
 
 class Usuario(AbstractUser):
     ROLES = (
@@ -138,7 +140,6 @@ class StockInsumo(models.Model):
         return f"{self.insumo.nombre} - {self.bodega.nombre}: {self.cantidad_actual}"
 
 class Persona(models.Model):
-    # This might overlap with Usuario, but following the SQL script exactly
     nombres = models.CharField(max_length=150)
     apellidos = models.CharField(max_length=150)
     email = models.EmailField(max_length=150, unique=True, blank=True, null=True)
@@ -197,3 +198,34 @@ class Mantenimiento(models.Model):
 
     class Meta:
         db_table = 'mantenimientos'
+
+class MovimientoActivo(models.Model):
+    TIPOS = (
+        ('ASIGNACION', 'Asignación'),
+        ('DEVOLUCION', 'Devolución'),
+        ('TRASLADO', 'Traslado'),
+        ('BAJA', 'Baja'),
+    )
+    activo_fijo = models.ForeignKey(ActivoFijo, on_delete=models.CASCADE, related_name='movimientos')
+    tipo = models.CharField(max_length=20, choices=TIPOS)
+    fecha = models.DateTimeField(auto_now_add=True)
+    persona = models.ForeignKey(Persona, on_delete=models.SET_NULL, null=True, blank=True)
+    ubicacion_anterior = models.CharField(max_length=150, blank=True, null=True)
+    ubicacion_nueva = models.CharField(max_length=150, blank=True, null=True)
+    observacion = models.TextField(blank=True, null=True)
+
+    class Meta:
+        db_table = 'movimientos_activos'
+
+@receiver(pre_save, sender=ActivoFijo)
+def track_asset_movement(sender, instance, **kwargs):
+    if instance.pk:
+        old_instance = ActivoFijo.objects.get(pk=instance.pk)
+        if old_instance.ubicacion_actual != instance.ubicacion_actual:
+            MovimientoActivo.objects.create(
+                activo_fijo=instance,
+                tipo='TRASLADO',
+                ubicacion_anterior=old_instance.ubicacion_actual,
+                ubicacion_nueva=instance.ubicacion_actual,
+                observacion='Cambio automático de ubicación'
+            )
