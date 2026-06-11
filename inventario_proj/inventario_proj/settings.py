@@ -89,13 +89,13 @@ DATABASES = {
         'HOST': '13.58.161.97',
         'PORT': '1433',
         'OPTIONS': {
-            'driver': 'ODBC Driver 18 for SQL Server',
+            'driver': 'ODBC Driver 17 for SQL Server',
             'TrustServerCertificate': 'yes',
         },
     }
 }
 
-# AUTH_USER_MODEL = 'inventario.Usuario'
+AUTH_USER_MODEL = 'inventario.Usuario'
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 
